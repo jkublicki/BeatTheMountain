@@ -1,0 +1,403 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//ma operować na widocznych obiektach terenu
+
+public class EnviroManager : MonoBehaviour {
+
+    GetterFinder gF;
+
+    //public int topMargin = 2;
+    //public int bottomMargin = 2;
+
+    int margin = 2;
+    int camSize = 5;
+
+    GameObject stone;
+    GameObject obstacle;
+    GameObject climber;
+
+    public List<GameObject> stonesList = new List<GameObject>();
+    public List<GameObject> obstaclesList = new List<GameObject>();
+
+    public GameObject[,,] stones;
+    public GameObject[,,] obstacles;
+
+    
+
+    GameObject FindAtListByPosition(List<GameObject> list, Vector3 pos)
+    {
+        foreach (GameObject b in list)
+        {
+            float d = 0.0f;
+            d = Vector3.Distance(pos, b.transform.position);
+            if (d < 0.1f)
+            {
+                return b;
+            }
+        }
+        return null;
+    }
+
+    void SpawnBlock(Vector3 pos)
+    {
+        /*
+        IntVector3 posInt = new IntVector3(pos);
+
+        if (stones[posInt.x, posInt.y, posInt.z] != null)
+        {
+            Debug.Log("SpawnBlock: spawning a duplicate");
+        }
+
+        stones[posInt.x, posInt.y, posInt.z] = Instantiate(stone, pos, stone.transform.rotation, stone.transform.parent);
+        */
+
+        //to samo oparte o listy
+        if (FindAtListByPosition(stonesList, pos) != null)
+        {
+            Debug.Log("SpawnBlock: spawning a duplicate");
+        }
+        stonesList.Add(Instantiate(stone, pos, stone.transform.rotation, stone.transform.parent));
+    }
+
+    void SpawnObstacle(Vector3 pos)
+    {
+        /*
+        IntVector3 posInt = new IntVector3(pos);
+
+        if (obstacles[posInt.x, posInt.y, posInt.z] != null)
+        {
+            Debug.Log("SpawnObstacle: spawning a duplicate");
+        }
+
+        obstacles[posInt.x, posInt.y, posInt.z] = Instantiate(obstacle, pos, obstacle.transform.rotation, obstacle.transform.parent);
+        */
+
+        //to samo oparte o listy        
+        if (FindAtListByPosition(obstaclesList, pos) != null)
+        {
+            Debug.Log("SpawnObstacle: spawning a duplicate");
+        }        
+        obstaclesList.Add(Instantiate(obstacle, pos, obstacle.transform.rotation, obstacle.transform.parent));
+    }
+
+    void SpawnMap()
+    {
+        for (int x = 0; x < EnviroGenerator.size; x++)
+        {
+            for (int z = 0; z < EnviroGenerator.size; z++)
+            {
+                for (int y = 0; y < climber.transform.position.y + camSize + margin + 1; y++)
+                {
+                    if (gF.enviroGeneratorScript.map3d[x, y, z] == 1)
+                    {
+                        SpawnBlock(new Vector3(x, y, z));
+                    }
+                    if (gF.enviroGeneratorScript.map3d[x, y, z] == 2)
+                    {
+                        SpawnObstacle(new Vector3(x, y, z));
+                    }
+                }
+            }
+        }
+    }    
+
+    void MoveStone(Helper.IntVector3 oldPos, Helper.IntVector3 newPos)
+    {
+        //IntVector3 oldPosInts = new IntVector3(oldPos);
+        //IntVector3 newPosInts = new IntVector3(newPos);
+
+        /*
+        if (stones[oldPos.x, oldPos.y, oldPos.z] != null)
+        {
+            GameObject temp = stones[oldPos.x, oldPos.y, oldPos.z];
+            stones[oldPos.x, oldPos.y, oldPos.z] = null;
+            stones[newPos.x, newPos.y, newPos.z] = temp;
+
+            stones[newPos.x, newPos.y, newPos.z].transform.position = new Vector3(newPos.x, newPos.y, newPos.z);
+        }
+        else
+        {
+            Debug.Log("MoveStone(): no such stones in stones array");
+        }    
+        */
+        
+        //to samo oparte o listy
+        if (FindAtListByPosition(stonesList, oldPos.ToVector3()) != null)
+        {
+            GameObject s = FindAtListByPosition(stonesList, oldPos.ToVector3());
+            s.transform.position = newPos.ToVector3();
+        }
+    }
+
+    //położenie względem kamery: 0 - w kadrze, 1 - poza kadrem, ale w obrębie marginesów; 2 - poza marginesem
+    int BlockPosVsCamera(Vector3 pos)
+    {
+        Helper.IntVector3 posInt = new Helper.IntVector3(pos);
+        Helper.IntVector3 camPosInt = new Helper.IntVector3(gF.climber.transform.position);
+
+        if(Mathf.Abs(posInt.y - camPosInt.y) > margin + camSize)            
+        {
+            return 2;
+        }
+        else
+        if((Mathf.Abs(posInt.y - camPosInt.y) > camSize)
+            && (Mathf.Abs(posInt.y - camPosInt.y) <= margin + camSize))
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    //mode: 0 - stones, 1 - obstacles
+    Helper.IntVector3 AnyEmptySpotInsideMargin(int mode)
+    {
+        Helper.IntVector3 r = new Helper.IntVector3(new Vector3(-100.0f, -100.0f, -100.0f));
+
+        Helper.IntVector3 camPosInt = new Helper.IntVector3(gF.climber.transform.position);
+
+        int minY = Mathf.Clamp(camPosInt.y - camSize - margin, 0, 2 * EnviroGenerator.size);
+        int maxY = Mathf.Clamp(camPosInt.y + camSize + margin, 0, 2 * EnviroGenerator.size);
+                
+        for (int x = 0; x < EnviroGenerator.size; x++)
+        {
+            for (int y = minY; y < maxY; y++)
+            {
+                for (int z = 0; z < EnviroGenerator.size; z++)
+                {
+                    if (((mode == 0) && (FindAtListByPosition(stonesList, new Vector3(x, y, z)) == null)) 
+                        || ((mode == 1) && (FindAtListByPosition(obstaclesList, new Vector3(x, y, z)) == null)))
+                    {
+                        if (gF.enviroGeneratorScript.map3d[x, y, z] == 1)
+                        {
+                            r.x = x;
+                            r.y = y;
+                            r.z = z;
+                            return r;
+                        }                            
+                    }
+                }
+            }
+        }
+        return r;
+    }
+  
+
+    int moveCounter = 0;
+    int spawnCounter = 0;
+
+    public void OnJump()
+    {
+        //przechodząc przez tablicę bloków typu stone
+        //sprawdź, czy blok jest poza kadrem i marginesem kadru
+        //jeśli tak, poszukaj dla niego miejsca poza kadrem, ale w marginesie - o ile to miejsce dla tego samego typu
+        //nastąpnie, na wypadek gdyby zabrakło bloków, przechodząc przez tablicę bloków
+        //jeżeli jest slot bez bloka, wyspawnuj blok
+
+        //jw. dla bloków typu obstacle
+
+
+        //przenoszenie bloków spoza marginesu
+        /*
+        for (int x = 0; x < EnviroGenerator.size; x++)
+        {
+            for (int y = 0; y < 2 * EnviroGenerator.size; y++)
+            {
+                for (int z = 0; z < EnviroGenerator.size; z++)
+                {
+                    if(stones[x, y, z] != null)
+                    {
+                        if (BlockPosVsCamera(new Vector3(x, y, z)) == 2)
+                        {
+                            IntVector3 v0 = new IntVector3(new Vector3(x, y, z));
+                            IntVector3 v1 = AnyEmptySpotInsideMargin(0);
+                            if (v1.y != -100)
+                            {
+                                MoveStone(v0, v1);
+                                moveCounter++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        */
+
+        //przenoszenie bloków spoza marginesu
+        foreach(GameObject s in stonesList)
+        {
+            if (BlockPosVsCamera(s.transform.position) == 2)
+            {
+                Helper.IntVector3 v1 = AnyEmptySpotInsideMargin(0);
+                if (v1.y != -100)
+                {
+                    s.transform.position = v1.ToVector3();
+                    moveCounter++;
+                }
+            }
+        }
+
+
+        //spawnowanie nowych
+        Helper.IntVector3 camPosInt = new Helper.IntVector3(gF.climber.transform.position);
+        int minY = Mathf.Clamp(camPosInt.y - camSize - margin, 0, 2 * EnviroGenerator.size);
+        int maxY = Mathf.Clamp(camPosInt.y + camSize + margin, 0, 2 * EnviroGenerator.size);
+        for (int x = 0; x < EnviroGenerator.size; x++)
+        {
+            for (int y = minY; y < maxY; y++)
+            {
+                for (int z = 0; z < EnviroGenerator.size; z++)
+                {
+                    if ((FindAtListByPosition(stonesList, new Vector3(x, y, z)) == null) 
+                        && (gF.enviroGeneratorScript.map3d[x, y, z] == 1))
+                    {
+                        SpawnBlock(new Vector3(x, y, z));
+                        spawnCounter++;
+                    }
+                }
+            }
+        }
+
+        Debug.Log("Moved: " + moveCounter.ToString() + ", spawned: " + spawnCounter.ToString());
+     }
+
+    /*
+    //todo? podobna operacja z kaktusami
+    void SpawnOrAddBlocks(Vector3 pos)
+    {
+        GameObject b;
+
+        if (spareBlockClones.Count > 0)
+        {
+            b = spareBlockClones[0];
+            spareBlockClones.RemoveAt(0);
+            blockClones.Add(b);
+            b.transform.position = pos;
+        }
+        else
+        {
+            SpawnBlock(pos);
+        }
+    }
+   
+
+    //30.03 ciąg dalszy pracy i błędy/problemy tylko w tym skrypcie i poniżej
+
+
+    //po ruchu climbera
+    void SpawnMoreBlocks(bool movedUp)
+    {
+        for (int x = 0; x < gF.enviroGeneratorScript.size; x++)
+        {
+            for (int z = 0; z < gF.enviroGeneratorScript.size; z++)
+            {
+                if (movedUp)
+                {
+                    //nie kumam czemu -1 ale działa
+                    int y = topMargin + (int)Mathf.Round(gF.climber.transform.position.y) - 1; //pionowa współrzędna nowego widocznego rzędu bloków
+
+                    if(y > 0)
+                    {
+                        //jeżeli ma tam być blok
+                        if (gF.enviroGeneratorScript.map3d[x, y, z] == 1)
+                        {
+                            SpawnOrAddBlocks(new Vector3(x, y, z));
+                        }
+                    }
+                }
+                else
+                {
+                    int y = (int)Mathf.Round(gF.climber.transform.position.y) - bottomMargin + 1; //pionowa współrzędna nowego widocznego rzędu bloków
+
+                    if(y > 0)
+                    {
+                        //jeżeli ma tam być blok
+                        if (gF.enviroGeneratorScript.map3d[x, y, z] == 1)
+                        {
+                            SpawnOrAddBlocks(new Vector3(x, y, z));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    //po ruchu climbera
+    void FindUnseenBlocks()
+    {
+        foreach (GameObject b in gF.enviroManagerScript.blockClones)
+        {
+            if ((b.transform.position.y - gF.climber.transform.position.y > topMargin) ||
+                (gF.climber.transform.position.y - b.transform.position.y > bottomMargin))
+            {
+                //blockClones.Remove(b);
+                gF.enviroManagerScript.spareBlockClones.Add(b);
+                
+            }
+        }
+        foreach (GameObject b in gF.enviroManagerScript.spareBlockClones)
+        {
+            if (gF.enviroManagerScript.blockClones.Contains(b))
+            {
+                gF.enviroManagerScript.blockClones.Remove(b);                
+            }
+        }
+    }
+
+    public void AdjustGeoToCamera(bool up)
+    {        
+        string s = "Adjust geo (frame " + Time.frameCount.ToString() + "): ";
+
+        s += "Enviro child count:" + transform.childCount.ToString();
+
+        FindUnseenBlocks();
+
+        s += ". Post FUB: " + gF.enviroManagerScript.BlockCount().ToString() + " blocks, spare: " + gF.enviroManagerScript.spareBlockClones.Count.ToString();
+
+        SpawnMoreBlocks(up);
+
+        s += ". Post SMB: " + gF.enviroManagerScript.BlockCount().ToString() + " blocks, spare: " + gF.enviroManagerScript.spareBlockClones.Count.ToString();
+
+        foreach (GameObject b in spareBlockClones)
+        {
+            b.transform.localScale = new Vector3(0.07f, 0.07f, 0.07f);
+        }
+        foreach (GameObject b in blockClones)
+        {
+            b.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
+        }
+
+        Debug.Log(s);        
+    }
+    */
+
+    // Use this for initialization
+    void Start () {
+
+        //jedyny potrzebny find albo getcomponent
+        gF = GameObject.FindGameObjectWithTag("Config").GetComponent<GetterFinder>();
+        stone = gF.standardStone;
+        obstacle = gF.standardObstacle;
+        climber = gF.climber;
+
+        //stones = new GameObject[EnviroGenerator.size, 2 * EnviroGenerator.size, EnviroGenerator.size];
+        //obstacles = new GameObject[EnviroGenerator.size, 2 * EnviroGenerator.size, EnviroGenerator.size];
+
+
+        //SpawnMap();
+
+        
+        
+    }
+	
+	// Update is called once per frame
+	void Update () {
+		
+	}
+}

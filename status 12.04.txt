@@ -1,0 +1,23 @@
+wkuc symbole bpmn
+wkuc zapytania sql
+dokonczyc kulke i wjebac na itch
+
+
+
+
+
+# testy big bang kulki
+
+powinienem tak czy siak zrobic testy funkcja po funkcji
+teraz ogólnie robie rozpierduche w funkcjach? raczej nie, raczej elimunuje korzystanie ze zmiennych globalnych
+
+
+
+przetestowac przesuwanie
+
+
+wydajnosciowo jest ok, spadek fps o 5% w porównaniu z brakiem aktualizacji terenu
+
+
+problem: powoli wyczerpuja sie kamienie, zaczyna sie po ~14 ruchach
+nie potrafi uzyc niektórych kamieni ze stone pool, ale wiedzac, ze je ma, nie spawnuje nowych; w efekcie wyczerpuja sie kamienie

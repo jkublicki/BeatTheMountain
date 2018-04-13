@@ -1,0 +1,136 @@
+
+
+
+gdzie maja byc informacje o instancjach? jak mam nimi operowac?
+
+# 1
+
+view box ma tablice[x, y, z] instancji, elementem listy jest odnosnik gameobject
+
+po przesunieciu view box w tablicy wszystkie odnosniki sie przesuwaja? lol
+
+
+# 2
+
+view box ma liste instancji, elementem jest struct: odnosnik gameobject i wspólrzedne
+
+po przesunieciu view box przechodzi mozolnie przez cala liste, sprawdza które elementy wypadly poza view box i cos z nimi robi
+lista bedzie miala raptem 1000 elementów
+
+
+te, które wypadly
+
+
+# 3 
+
+swiat ma informacje która wspólrzedna jest zainstancjonowana?
+
+
+
+# 4
+
+view box ma liste swoich punktów, elementem jest struct: odnosnik gameobject, wspólrzedne i informacja czy obiekt wypadl/wpadl/jest w view box
+
+po przesunieciu view box wylapywane sa punkty, które wypadly i wpadly i z ich instancjami od razu cos jest robione
+do tego robie funkcje podobna do abandoned or gained, ale dzialajace per punkt
+
+
+# 5
+
+view box ma tablice swoich punktów, indeksem sa wspólrzedne wzgledne, elementem jest: wspólrzedne bezwzgledne, instancja
+
+
+# 6
+
+view box jest duzy, na tyle, ze ma co najmniej margines 3
+po przesunieciu instancje sa porzadkowane tak, ze te blisko krawedzi sa zabierane do srodka
+odnosnik gameobject jest w tablicy, której indeksami sa wspólrzedne wzgledne
+
+
+# 7 
+
+po przesunieciu przejscie przez liste abandoned points i przeniesienie instancji na miejsca z listy gained points
+ww abandoned albo gained sa okreslone we wspólrzednych bezwzglednych
+
+ich wspólrzedne sa przeliczane na wspólrzedne wzgledne view boxa, dzieki temu mozna znalezc instancje
+odnosniki do instancji sa przechowywane w tablicy indeksowanej wzglednymi wspólrzednymi
+
+view box jest helperem dla enviro managera, robi: listy abandoned i gained, przelicza wspólrzedne, ma tablice z odnosnikami do instancji
+
+przesuniecie wiaze sie z przesunieciem wszystkich instancji w tablicy? bez sensu...
+
+# 7+ 
+
+jw. ale view box zastepuje enviro managera, lacznie z inteligentnym spawnowaniem, np. zeby pod kaktusem nie byl kaktus
+
+
+# 8
+
+po przesunieciu view box przejscie przez liste abandoned points, dla kazdego jej elementu przeszukanie listy instancji (po wspólrzednych)
+
+
+# 9 <== this
+
+hashtable jako zbiór informacji o instancjach: elementem w hashtable instancji jest para: wspólrzedne bezwzgledne (intvect) i odnosnik do instancji (gameobject)
+
+przejscie przez liste abandoned points, dla kazdego jej elementu bierzemy gameobject z hashtable instancji (znaleziony po koordynatach zwróconych przez abandoned points), dodajemy go to hashtable z nowym adresem, usuwamy spod starego adresu, fizycznie przesuwamy gameobject
+albo podobna tego rodzaju magia, cos w ten desen
+
+czyli abandoned points i gained points generuja klucze do przeszukiwania hashtable
+
+
+szczególowo co sie dzieje:
+
+dla kazdego opuszczonego punktu, który ma instancje:
+
+- jezeli jest wolne miejsce, przesuwamy instancje
+//-- to trzeba robic osobno dla kazdego flavor... *
+-- jezeli na liscie gained points jest miejsce z pasujacym flavor
+
+
+-- fizyczne przesuniecie bloczka
+-- usuniecie miejsca na liscie gained points, zeby juz tego nie przeszukiwac
+-- aktualizacja hashtable, tzn usuniecie elementu a potem dodanie go z nowym adresem
+
+
+- jezeli nie ma wolnego miejsce, kasujemy
+
+potem sprawdzenie, czy sa jakies nabyte punkty, które nie maja instancji
+
+- jezeli sa, instancjonowanie
+
+
+# 9-1
+
+wariant z wieloma hashtable dla róznych rodzajów obiektów
+
+
+
+## 10
+
+* moze potrzeba tablicy z mapa3d dla biezacego view boxa, elementem jest flavor
+
+
+
+
+# 20:00 sobota
+
+potrzebne:
+pooling - pool per flavor
+funkcja która na podstawie koordynat mówi jaki tam ma byc flavor
+
+aktualnie nie ma problemu z lokalizowaniem i dobieraniem sie do zbednych bloków
+problem jest z tym, gdzie je przeniesc, rozwiazanie jw
+
+przeniesc do poola
+potem przejsc przez nabyte punkty, sprawdzic dla nich flavor funkcja i siegnac po odpowiedni blok do odpowiedniego poola albo wyspawnowac
+
+
+ # niedziela 09.04 pózny wieczór
+
+potrzebne jest testowanie funkcja po funkcji calego view box;
+cos jest zle, ale generalnie z wydajnoscia jest ok (wszystko zw. z kulka jest odizolowane)
+ogólne wnioski: powinienem duzo wiecej testowac to wszystko co pisze, jak upierdliwe by te testy nie byly
+
+
+>>  todo na teraz: testy!! 

@@ -1,0 +1,17 @@
+c#
+20 cv
+
+pt 20-23
+nd 11-19
+
+
+
+to sie nie trzyma kupy. ja mam drastycznie za malo czasu. alka ma drastycznie za malo uwagi. borys tez i go przez to trace. gówno wyjdzie z procesu, zwiazku i mojego przebranzowienia. 
+powinienem zmaksymalizowac efektywnosc nauki, znalezc np. "zeszyt cwiczen" do c#, robic to w krótkich okienkach. potem wlaczyc w czas na nauke czas w pracy w taki sposób, ze zdobede jakakolwiek, chocby glupia prace jako koder c# / ktos blisko koderów.
+ja mam i tak za malo wiary w siebie, sily, czasu, wszystkiego, zeby samemu forsowac konczenie swoich "gierek po godzinach". jak juz moge przy tym siedziec, to musze przy tym sluchac jak alka placze albo jak sie na mnie drze. 
+rozpoczecie kodowania zajelo mi dzisiaj 7 godzin
+
+
+# kulka
+status:
+zrobilem tablice map layered 2d i jest zapelniana

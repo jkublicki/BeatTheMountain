@@ -1,0 +1,34 @@
+## koza status 07.01 00:29
+
+# decyzja co dalej
+
+mam generowanie mapy i generowanie fizycznego terenu wg. mapy
+problem wydajnościowy mogę zmniejszyć przez combine mesh - np. akceptowalne jest teraz size 100, a było 50, ale zastosowanie combine sprawia, że nie działają sensory, które zresztą i tak chciałem wymienić na działanie w oparciu o mapę
+dalej też chciałem skończyć z wyświetlaniem terenu pod i nad kadrem kamery
+trzeba sprawdzić jak to działa na mobilce, a pod to trzeba zrobić mobilny input, no i wyłączyć combine <<< wydajność, wg. tego planować dalsze działania
+
+
+# backlog / minors / wszystko
+
+skakanie jest jakieś mało responsywne - spróbować wrócić do getkey po wyjebaniu sensorów i przejściu na mapę
+nie ma wrażenia, jak w zyngowej kozie, chodzenia po labiryncie; ale grzebanie w algorytmie to syfon czasu
+w nakurwianiu w górę po jednej z dwóch scieżek nie ma żadnego wyzwania, oprócz walki ze znużeniem
+- lawiny
+- potwory i ich spawny przy znajdkach
+- mocno przyspieszyć time scale
+- pomysł: po prostu dolna krawędź kadru zabija aka lawa
+
+# podsumowanie:
+
+1. nie wiadomo jak działać z generowaniem terenu, bo wydajność - a to kluczowy system, od którego wiele zależy
+2. nie ma żadnego gameplaya
+3. jest bieda estetycznie ale coś się ogarnie, no worries
+4. jw. brakujący dźwięk
+5. jw. drobiazgi ux typu responsywność skakania
+
+krytyczny jest pkt. 1
+//- zrobić sterowanie na mobilki
+//-wyłączyć combine
+//-ustawić size ok. 50
+- build mobilny
+- podłączyć profiler

@@ -1,0 +1,18 @@
+obecnie todo [05.01 14:35]
+
+status:
+
+mam sensory i funkcję wykrywającą kolizje, która wspomaga się sensorami
+mam funkcję, która posiłkując sie tym wykrywa kontekst jaki  stanowi teren i odpowiednio do niego interpretuje komendę
+
+funkcja geocontext powinna być testowania / traktowana z nieufnością
+
+brakuje:
+
+//reakcji na 3 inputy: prawo-w-górę i oba w dół
+//animacji odbijania się od przeszkody - kontekst "0"
+animacji "o-o!" przed śmiercią
+skrócenia kodu w update
+//przejazd do -3 albo -2 na y na tle bloczka powoduje wnikanie w bloczek (minor)
+
+

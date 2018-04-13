@@ -1,0 +1,23 @@
+to jest BRANCH do eksperymentów, nie kontynuowac;
+
+
+# performance:
+
+shaders: https://docs.unity3d.com/Manual/shader-Performance.html - minimalna róznica
+male textury, koniecznie *.png - minimalna róznica
+revert factory settings - spora róznica, ale nie sedno
+chwilowe pominiecie korutyny jump reposition p i przeróbki z tym zwiazane - nie sedno
+
+
+
+
+
+jest jakis koszmarny problem podczas dostawiania nowego rzedu kamieni, zawiechy na 6-25 sekund
+widac to w profilerze, ale on wskazuje po prostu na najbardziej ogólna funkcje climber.update
+
+
+
+wniosek:
+
+potrzeba by b. dlugiego osobnego projektu do samych eksperymentów z zarzadzaniem terenem, gdzie wiele obiektów przenosze itp.
+to jest ok do nauki unity, ale na marginesie nauki c#; duzo sensowniej wykorzystac mój maly zasób czasu do robienia cwiczen vs/c#

@@ -1,0 +1,419 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.Events;
+
+public class Climber : MonoBehaviour {
+
+    GetterFinder gF;
+    Animator animator;
+    bool canJump = false;
+    bool canSplash = false;
+
+    public UnityEvent jumpEvent;
+    
+    void Die()
+    {
+        if(canSplash)
+        {
+            canSplash = false;
+            GetComponent<MeshRenderer>().enabled = false;
+            transform.Find("Splash").gameObject.SetActive(true);
+            transform.Find("Splash").GetComponent<ParticleSystem>().Play();
+            //przzydałoby się wymuszenie pozostania kamery w tym miejscu
+            
+            gF.camera1.transform.SetParent(null);
+            StartCoroutine(Reload());
+        }        
+    }
+
+    IEnumerator Reload()
+    {
+        for(float t = 0.0f; t < 2.0f; t += Time.deltaTime)
+        {
+            yield return null;
+        }
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    IEnumerator JumpRepositionP(Vector3 delta)
+    {
+        canJump = false;
+        Vector3 pos0 = transform.parent.transform.position;
+        Vector3 pos1 = transform.parent.transform.position + delta;        
+        Vector3 pos = pos0;
+        float waitDuration = 0.05f; //dobrać ręcznie aby pasowało do animacji
+        float moveDuration = 0.45f; //jw (niewiele ma wspólnego z czasem animacji)
+        float l = 0.0f;
+
+        for (float t = 0; t < waitDuration + moveDuration; t += Time.deltaTime)
+        {            
+            l = Mathf.Max((t - waitDuration), 0.0f);
+            l = l / moveDuration;
+            pos = Vector3.Lerp(pos0, pos1, l);
+            transform.parent.transform.position = pos;
+            yield return null;
+        }
+
+        transform.parent.transform.position = pos1;
+
+        //dodatkowe oczekiwanie, żeby zabezpieczyć przed canJump = true w locie
+        //dobrać wartość czasu; na pewno jest ok dla 0.1, ale nieco mało responsywne
+        /*
+        for (float t = 0; t < 0.03f; t += Time.deltaTime)
+        {
+            yield return null;
+        }
+        */
+
+        canJump = true;
+
+        //uwaga dodatkowo to
+        jumpEvent.Invoke();
+        //gF.enviroManagerScript.AdjustGeoToCamera(delta.y > 0);
+    }
+
+    void JumpRepositionSubstitute(Vector3 delta)
+    {
+        Vector3 pos1 = transform.parent.transform.position + delta;
+        transform.parent.transform.position = pos1;
+        jumpEvent.Invoke();
+    }
+
+  
+
+    IEnumerator NoRepositionWait()
+    {
+        canJump = false;
+        
+        float waitDuration = 0.6f; //jw (niewiele ma wspólnego z czasem animacji)        
+
+        for (float t = 0; t < waitDuration; t += Time.deltaTime)
+        {
+            yield return null;
+        }
+
+
+        
+        canJump = true;
+    }
+
+    IEnumerator FallRepositionP(Vector3 delta)
+    {
+        delta = new Vector3(delta.x, -1.5f, delta.z);
+
+        //StartCoroutine(JumpRepositionP(delta));
+        JumpRepositionSubstitute(delta);
+
+
+
+        for (float t = 0.0f; t < 0.5f; t += Time.deltaTime)
+        {
+            yield return null;
+        }
+
+        canSplash = true;
+
+        //StartCoroutine(JumpRepositionP(new Vector3(0.0f, -3.0f, 0.0f)));
+        JumpRepositionSubstitute(new Vector3(0.0f, -3.0f, 0.0f));
+
+
+        for (float t = 0.0f; t < 0.5f; t += Time.deltaTime)
+        {
+            yield return null;
+        }
+
+        Die();
+    }
+
+
+
+    //sprawdza używając sensorów, czy jest gdzie skoczyć
+    //z - lewo, x - prawo, y - góra
+    bool HasNeighbour(string sensorName)
+    {       
+        GameObject sensor;
+        SphereCollider sensorCollider;
+        float r = 0.1f;
+
+        if (transform.Find(sensorName).gameObject != null)
+        {
+            sensor = transform.Find(sensorName).gameObject;
+            sensorCollider = sensor.GetComponent<SphereCollider>();
+        }
+        else
+        {
+            //Debug.Log("Can't find sensor. Returning false.");
+            return false;
+        }
+
+        r = Vector3.Magnitude(sensorCollider.transform.localScale) * sensorCollider.radius;
+
+        //Debug.Log("Checking using sphere [" + sensorName + "] at pos: " + sensorCollider.transform.position.ToString("0.000") + ", r: " + r.ToString());        
+
+        if (Physics.OverlapSphere(sensorCollider.transform.position, r).Length > 0)
+        {
+            //Debug.Log("colliding with " + Physics.OverlapSphere(sensorCollider.transform.position, r)[0].name);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    bool HasNeighbour1(int dx, int dy, int dz)
+    {
+        Helper.IntVector3 p = new Helper.IntVector3(transform.position);
+        Helper.IntVector3 p1 = p;
+        p1.x += dx;
+        p1.y += dy;
+        p1.z += dz;
+        if(gF.enviroGeneratorScript.map3d[p1.x, p1.y, p1.z] == 1)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }        
+    }
+
+    //0 - nie da się, 1 - da się, 2 - równy poziom, 3 - 1 w dół, 4 - 2 w dół, 5 - przepaść
+    //to jest pewnie ostro zjebane
+    int GeoContext(bool left, bool up)
+    {
+        int r = -1;
+        
+        if (left & up)
+        {
+            //if (HasNeighbour("sensorLU")) { r = 0; }            
+            if (HasNeighbour1(0, 1, 1)) { r = 0; }
+            else
+            //if (HasNeighbour("sensorL")) { r = 1; }
+            if (HasNeighbour1(0, 0, 1)) { r = 1; }
+            else
+            //if (HasNeighbour("sensorLD")) { r = 2; }
+            if (HasNeighbour1(0, -1, 1)) { r = 2; }
+            else
+            //if (HasNeighbour("sensorLDD")) { r = 3; }
+            if (HasNeighbour1(0, -2, 1)) { r = 3; }
+            else
+            //if (HasNeighbour("sensorLDDD")) { r = 4; }
+            if (HasNeighbour1(0, -3, 1)) { r = 4; }
+        }
+        else
+        if (!left & up)
+        {
+            //if (HasNeighbour("sensorRU")) { r = 0; }
+            if (HasNeighbour1(1, 1, 0)) { r = 0; }
+            else
+            //if (HasNeighbour("sensorR")) { r = 1; }
+            if (HasNeighbour1(1, 0, 0)) { r = 1; }
+            else
+            //if (HasNeighbour("sensorRD")) { r = 2; }
+            if (HasNeighbour1(1, -1, 0)) { r = 2; }
+            else
+            //if (HasNeighbour("sensorRDD")) { r = 3; }
+            if (HasNeighbour1(1, -2, 0)) { r = 3; }
+            else
+            //if (HasNeighbour("sensorRDDD")) { r = 4; }
+            if (HasNeighbour1(1, -3, 0)) { r = 4; }
+        }
+        else
+        if (left & !up)
+        {
+            //if (HasNeighbour("sensorDownLU")) { r = 0; }
+            if (HasNeighbour1(-1, 1, 0)) { r = 0; }
+            else
+            //if (HasNeighbour("sensorDownL")) { r = 1; }
+            if (HasNeighbour1(-1, 0, 0)) { r = 1; }
+            else
+            //if (HasNeighbour("sensorDownLD")) { r = 2; }
+            if (HasNeighbour1(-1, -1, 0)) { r = 2; }
+            else
+            //if (HasNeighbour("sensorDownLDD")) { r = 3; }
+            if (HasNeighbour1(-1, -2, 0)) { r = 3; }
+            else
+            //if (HasNeighbour("sensorDownLDDD")) { r = 4; }
+            if (HasNeighbour1(-1, -3, 0)) { r = 4; }
+        }
+        else
+        if (!left & !up)
+        {
+            //if (HasNeighbour("sensorDownRU")) { r = 0; }
+            if (HasNeighbour1(0, 1,-1)) { r = 0; }
+            else
+            //if (HasNeighbour("sensorDownR")) { r = 1; }
+            if (HasNeighbour1(0, 0, -1)) { r = 1; }
+            else
+            //if (HasNeighbour("sensorDownRD")) { r = 2; }
+            if (HasNeighbour1(0, -1, -1)) { r = 2; }
+            else
+            //if (HasNeighbour("sensorDownRDD")) { r = 3; }
+            if (HasNeighbour1(0, -2, -1)) { r = 3; }
+            else
+            //if (HasNeighbour("sensorDownRDDD")) { r = 4; }
+            if (HasNeighbour1(0, -3, -1)) { r = 4; }
+        }
+
+        //Debug.Log("GeoContext: " + r.ToString());
+        return r;
+    }
+
+
+
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if(canSplash && (collision.collider.name.Contains("Stone")))
+        {
+            Die();
+        }
+    }
+
+    //tylko na potrzeby buttonów
+    public void JumpLU() { OnJumpCommand(true, true); }
+    public void JumpRU() { OnJumpCommand(false, true); }
+    public void JumpLD() { OnJumpCommand(true, false); }
+    public void JumpRD() { OnJumpCommand(false, false); }
+
+    void OnJumpCommand(bool left, bool up)
+    {
+        
+
+
+        float dX = 0.0f;
+        float dZ = 0.0f;
+
+        if(left && up) { dX = 0.0f; dZ = 1.0f; }
+        else
+        if (!left && up) { dX = 1.0f; dZ = 0.0f; }
+        else
+        if (left && !up) { dX = -1.0f; dZ = 0.0f; }
+        else
+        if (!left && !up) { dX = 0.0f; dZ = -1.0f; }
+
+        //nie da się - dorobić animację odbijania, może być bez korutyny, bo zaczyna i kończy w tym samym miejscu
+        if (GeoContext(left, up) == 0)
+        {
+            if (up)
+            {
+                if (left) { animator.SetTrigger("bounceLTrigger"); } else { animator.SetTrigger("bounceRTrigger"); }
+            }
+            StartCoroutine(NoRepositionWait());
+        }
+
+        
+
+        //da się wskoczyć
+        if (GeoContext(left, up) == 1)
+        {
+            animator.SetTrigger("jumpUpTrigger");
+            //StartCoroutine(JumpRepositionP(new Vector3(dX, 1.0f, dZ)));
+            JumpRepositionSubstitute(new Vector3(dX, 1.0f, dZ));
+            
+        }
+        else
+        //ten sam poziom
+        if (GeoContext(left, up) == 2)
+        {
+            animator.SetTrigger("jumpUpTrigger");
+            //StartCoroutine(JumpRepositionP(new Vector3(dX, 0.0f, dZ)));
+            JumpRepositionSubstitute(new Vector3(dX, 0.0f, dZ));
+        }
+
+        //poziom niżej
+        if (GeoContext(left, up) == 3)
+        {
+            animator.SetTrigger("jumpUpTrigger");
+            //StartCoroutine(JumpRepositionP(new Vector3(dX, -1.0f, dZ)));
+            JumpRepositionSubstitute(new Vector3(dX, -1.0f, dZ));
+        }
+
+
+        //dwa poziomy niżej
+        if (GeoContext(left, up) == 4)
+        {
+            animator.SetTrigger("jumpUpTrigger");
+            StartCoroutine(FallRepositionP(new Vector3(dX, -2.0f, dZ)));
+            //tu dodatkowo trzeba zabić wspinacza, bo przestaje być widoczny i ogólnie taki jest feel, że powinien umrzeć
+            //przy śmierci animacja kreskówkowa "o-o! przepaść!"
+
+            //Debug.Log("AAAAAAAAA!!!");
+        }
+
+        //przepaść
+        if (GeoContext(left, up) == -1)
+        {
+            animator.SetTrigger("jumpUpTrigger");
+            StartCoroutine(FallRepositionP(new Vector3(dX, -2.0f, dZ)));
+            //zabić
+            //przy śmierci animacja kreskówkowa "o-o! przepaść!"
+
+            //Debug.Log("AAAAAAAAA!!!");
+        }
+
+        
+    }
+
+
+
+
+    // Use this for initialization
+    void Start () {
+
+        //jedyny potrzebny find albo getcomponent
+        gF = GameObject.FindGameObjectWithTag("Config").GetComponent<GetterFinder>();
+
+
+        Time.timeScale = 1.5f;
+
+        animator = GetComponent<Animator>();
+        canJump = true;
+
+        
+	}
+
+
+    bool counted = false;
+
+    // Update is called once per frame
+    void Update () {    
+
+        if(!counted)
+        {
+            counted = true;
+            //Debug.Log(gF.enviroManagerScript.BlockCount().ToString() + " blocks on scene");
+        }
+
+
+        if(canJump)
+        {
+            //skok w lewo w górę
+            if (Input.GetKeyDown(KeyCode.Q))
+            {
+                OnJumpCommand(true, true);                
+            }
+
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                OnJumpCommand(false, true);
+            }
+
+            if(Input.GetKeyDown(KeyCode.A))
+            {
+                OnJumpCommand(true, false);
+            }
+
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                OnJumpCommand(false, false);
+            }
+        }
+
+        
+    }   
+}
